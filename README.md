@@ -3,7 +3,9 @@
 <div align="center">
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Malfrox/OpenBooth/main/public/favicon.ico" alt="OpenBooth Logo" width="72" height="72" />
+  <a href="https://openbooth.vercel.app">
+    <img src="assets/demo.gif" alt="OpenBooth Demo" width="720" style="border-radius: 12px; max-width: 100%;" />
+  </a>
 </p>
 
 # OpenBooth
