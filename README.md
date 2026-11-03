@@ -17,7 +17,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FMalfrox%2FOpenBooth)
 
-[**Try Live Demo**](https://openbooth.vercel.app) · [**Report Bug**](https://github.com/Malfrox/OpenBooth/issues) · [**Design Spec**](docs/design-spec.md)
+[**Try Live Demo**](https://openbooth.vercel.app) · [**Report Bug**](https://github.com/Malfrox/OpenBooth/issues)
 
 </div>
 
@@ -132,8 +132,6 @@ OpenBooth is built around a warm, vintage-inspired palette:
 - **Sage Green (`#6BA89E`)**: Retro secondary accents
 - **Warm Charcoal (`#3D3830`)**: High-legibility headline tone
 - **Film Gold (`#D4A574`)**: Golden hour and success state highlight
-
-Full component tokens and layout rules can be referenced in [docs/design-spec.md](docs/design-spec.md).
 
 ---
 
