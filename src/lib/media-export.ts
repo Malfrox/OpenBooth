@@ -5,11 +5,18 @@
  */
 
 /**
+ * Converts a data URL (e.g. data:image/png;base64,...) to a real binary Blob.
+ */
+export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+/**
  * Converts a data URL (e.g. data:image/png;base64,...) to a File object.
  */
 export async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
+  const blob = await dataUrlToBlob(dataUrl);
   const mime = blob.type || "image/png";
   return new File([blob], filename, { type: mime });
 }
@@ -31,15 +38,91 @@ export function canNativeShareFiles(): boolean {
 }
 
 /**
- * Trigger browser file download using a hidden anchor element.
+ * Trigger browser file download using a binary Blob URL.
+ * Converts data URL to Blob, creates an Object URL with explicit MIME type,
+ * triggers download, and cleanly revokes the Object URL after a short timeout.
+ * Android Chrome's download manager sets the correct MIME type from the Blob,
+ * allowing Android's MediaScanner to index the file directly into Gallery/Photos.
  */
-export function downloadDataUrl(dataUrl: string, filename: string): void {
+export async function downloadBlobUrl(dataUrl: string, filename: string): Promise<void> {
+  const blob = await dataUrlToBlob(dataUrl);
+  const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = dataUrl;
+  a.href = blobUrl;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+}
+
+/**
+ * Backwards compatibility alias for downloadBlobUrl.
+ */
+export function downloadDataUrl(dataUrl: string, filename: string): void {
+  void downloadBlobUrl(dataUrl, filename);
+}
+
+/**
+ * Attempts to save a file using the File System Access API (showSaveFilePicker).
+ * Specifically passes `startIn: 'pictures'` so Android Chromium suggests saving
+ * directly into the device's Pictures folder, indexed by Android Gallery/Google Photos.
+ */
+export async function saveWithFilePicker(
+  blob: Blob,
+  filename: string,
+  mime: string,
+): Promise<"saved" | "dismissed"> {
+  if (typeof window === "undefined" || !("showSaveFilePicker" in window)) {
+    throw new Error("showSaveFilePicker is not supported in this browser");
+  }
+
+  const ext = filename.split(".").pop() || "png";
+  try {
+    const pickerFn = (
+      window as unknown as {
+        showSaveFilePicker: (opts: {
+          suggestedName: string;
+          startIn?: string;
+          types?: Array<{
+            description?: string;
+            accept: Record<string, string[]>;
+          }>;
+        }) => Promise<{
+          createWritable: () => Promise<{
+            write: (data: Blob) => Promise<void>;
+            close: () => Promise<void>;
+          }>;
+        }>;
+      }
+    ).showSaveFilePicker;
+
+    const handle = await pickerFn({
+      suggestedName: filename,
+      startIn: "pictures",
+      types: [
+        {
+          description: "Image",
+          accept: { [mime]: [`.${ext}`] },
+        },
+      ],
+    });
+
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return "saved";
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      (err.name === "AbortError" ||
+        err.message.includes("abort") ||
+        err.message.includes("canceled"))
+    ) {
+      return "dismissed";
+    }
+    throw err;
+  }
 }
 
 export interface ExportOrShareOptions {
@@ -50,18 +133,22 @@ export interface ExportOrShareOptions {
 }
 
 /**
- * Attempts to share the image via Web Share API (native share sheet on iOS/Android/macOS),
- * which allows users to directly select "Save to Photos" / "Save Image".
- * Falls back to anchor tag download if Web Share is unsupported or fails non-abortively.
+ * Exports or shares an image across platforms using a 3-tier strategy:
+ * 1. Web Share API Level 2 (files): Best for iOS Safari ("Save Image" action) and Android Intent chooser.
+ * 2. File System Access API (`showSaveFilePicker` with `startIn: 'pictures'`): Direct save into Android/Desktop Pictures folder.
+ * 3. Binary Blob URL anchor download: Reliable fallback with proper MIME indexing for Android MediaScanner.
  *
- * Returns 'shared' if shared via navigator.share, or 'downloaded' if saved via fallback.
+ * Returns:
+ * - 'shared': Shared via navigator.share (or user dismissed share sheet)
+ * - 'saved': Saved directly via showSaveFilePicker
+ * - 'downloaded': Downloaded via Blob URL anchor fallback
  */
 export async function exportOrShareImage(options: {
   dataUrl: string;
   filename: string;
   title?: string;
   text?: string;
-}): Promise<"shared" | "downloaded"> {
+}): Promise<"shared" | "saved" | "downloaded"> {
   const { dataUrl, filename, title, text } = options;
 
   if (canNativeShareFiles()) {
@@ -88,12 +175,32 @@ export async function exportOrShareImage(options: {
       ) {
         return "shared";
       }
-      // Any other unexpected share error: fall through to standard download
+      // Any other unexpected share error: fall through to save picker / blob download
       console.warn("Web Share failed, falling back to download:", err);
     }
   }
 
-  // Fallback: standard anchor download
-  downloadDataUrl(dataUrl, filename);
+  // Tier 2: File System Access API (Chromium Android Chrome 132+ and desktop)
+  if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+    try {
+      const blob = await dataUrlToBlob(dataUrl);
+      const mime =
+        blob.type ||
+        (filename.endsWith(".jpg") || filename.endsWith(".jpeg") ? "image/jpeg" : "image/png");
+      const result = await saveWithFilePicker(blob, filename, mime);
+      if (result === "saved") {
+        return "saved";
+      }
+      // If user dismissed the picker, treat as successfully handled without downloading twice
+      if (result === "dismissed") {
+        return "saved";
+      }
+    } catch (err: unknown) {
+      console.warn("File System Access API failed, falling back to blob download:", err);
+    }
+  }
+
+  // Tier 3: Binary Blob URL anchor download fallback
+  await downloadBlobUrl(dataUrl, filename);
   return "downloaded";
 }

@@ -47,9 +47,11 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
       toast.success(
         res === "shared"
           ? "Opened share sheet"
-          : isFullFourStrip
-            ? "4-Photo strip downloaded!"
-            : `${Math.min(photos.length, 4)}-Photo strip downloaded!`,
+          : res === "saved"
+            ? "Saved to Pictures / Photos"
+            : isFullFourStrip
+              ? "4-Photo strip downloaded!"
+              : `${Math.min(photos.length, 4)}-Photo strip downloaded!`,
       );
     } catch (err) {
       console.error(err);
@@ -77,7 +79,13 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
         ...(userTitle ? { title: userTitle } : {}),
       });
 
-      toast.success(res === "shared" ? "Opened share sheet" : "Photo downloaded");
+      toast.success(
+        res === "shared"
+          ? "Opened share sheet"
+          : res === "saved"
+            ? "Saved to Pictures / Photos"
+            : "Photo downloaded",
+      );
       setTimeout(() => setDownloadingId(null), 1000);
     } catch {
       toast.error("Failed to download photo");

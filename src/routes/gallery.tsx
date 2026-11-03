@@ -73,6 +73,8 @@ function GalleryPage() {
       });
       if (res === "shared") {
         toast.success("Opened share sheet / Saved");
+      } else if (res === "saved") {
+        toast.success("Saved to Pictures / Photos");
       } else {
         toast.success("Photo downloaded");
       }
@@ -325,11 +327,12 @@ function GalleryPage() {
                 />
               </div>
 
-              {/* iOS hint */}
+              {/* Mobile hint */}
               <div className="flex items-center gap-1.5 border-t border-border/50 bg-secondary/5 px-4 py-2 text-xs text-muted-foreground">
                 <Info size={14} className="shrink-0 text-primary" />
                 <span>
-                  Tip: On iPhone/iPad, hold the photo to choose <strong>“Save to Photos”</strong>.
+                  Tip: On iPhone hold image to “Save to Photos”. On Android, tap “Save to Photos /
+                  Share” to send directly to Google Photos or save to your Pictures folder.
                 </span>
               </div>
 
@@ -408,12 +411,12 @@ function GalleryPage() {
                 />
               </div>
 
-              {/* iOS hint */}
+              {/* Mobile hint */}
               <div className="flex items-center gap-1.5 border-t border-border/50 bg-secondary/5 px-4 py-2 text-xs text-muted-foreground">
                 <Info size={14} className="shrink-0 text-primary" />
                 <span>
-                  Tip: On iPhone, tap <strong>Save to Photos</strong> or hold the strip to save
-                  directly to your Camera Roll.
+                  Tip: On iPhone hold image to “Save to Photos”. On Android, tap “Save to Photos /
+                  Share” to send directly to Google Photos or save to your Pictures folder.
                 </span>
               </div>
 
