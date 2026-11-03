@@ -123,15 +123,8 @@ export async function generatePhotoStrip({
   }
 
   // 4. Photobooth Chin / Footer details
-  const displayTitle = (title || settings?.title || "OPEN BOOTH").toUpperCase();
-
+  const userTitle = (title ?? settings?.title ?? "").trim();
   const footerCenterY = currentY + (paddingBottom - photoGap) / 2;
-
-  // Title
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#3D3830";
-  ctx.font = "700 18px 'Courier New', Courier, monospace";
-  ctx.fillText(displayTitle, stripWidth / 2, footerCenterY - 4);
 
   // Date and branding stamp
   const timestamp = stripPhotos[stripPhotos.length - 1]?.timestamp || Date.now();
@@ -145,9 +138,24 @@ export async function generatePhotoStrip({
     minute: "2-digit",
   });
 
-  ctx.fillStyle = "#8B8680";
-  ctx.font = "500 12px monospace";
-  ctx.fillText(`${dateStr} • ${timeStr}`, stripWidth / 2, footerCenterY + 16);
+  ctx.textAlign = "center";
+
+  if (userTitle) {
+    // Title
+    ctx.fillStyle = "#3D3830";
+    ctx.font = "700 18px 'Courier New', Courier, monospace";
+    ctx.fillText(userTitle.toUpperCase(), stripWidth / 2, footerCenterY - 6);
+
+    // Date below title
+    ctx.fillStyle = "#8B8680";
+    ctx.font = "500 12px monospace";
+    ctx.fillText(`${dateStr} • ${timeStr}`, stripWidth / 2, footerCenterY + 14);
+  } else {
+    // Only date/timestamp centered cleanly in chin area
+    ctx.fillStyle = "#8B8680";
+    ctx.font = "500 12px monospace";
+    ctx.fillText(`${dateStr} • ${timeStr}`, stripWidth / 2, footerCenterY + 4);
+  }
 
   const mime = format === "jpeg" ? "image/jpeg" : "image/png";
   return canvas.toDataURL(mime, 0.95);
@@ -158,8 +166,7 @@ export async function generatePhotoStrip({
  */
 export async function downloadPhotoStrip(options: StripGeneratorOptions): Promise<void> {
   const dataUrl = await generatePhotoStrip(options);
-  const baseTitle = (options.title || options.settings?.title || "openbooth")
-    .trim()
+  const baseTitle = ((options.title ?? options.settings?.title ?? "").trim() || "openbooth")
     .toLowerCase()
     .replace(/\s+/g, "-");
   const ext = options.format || options.settings?.format || "png";

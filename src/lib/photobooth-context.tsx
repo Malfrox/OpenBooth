@@ -30,7 +30,7 @@ const defaultSettings: BoothSettings = {
   facingMode: "user",
   format: "png",
   resolution: { w: 1080, h: 1440 },
-  title: "MY PHOTOBOOTH",
+  title: "",
 };
 
 export const BoothProvider = ({ children }: { children: ReactNode }) => {

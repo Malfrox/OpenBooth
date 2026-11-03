@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Download, Trash2, Check, Sparkles, Layers } from "lucide-react";
 import { useBooth, type Photo } from "@/lib/photobooth-context";
-import { downloadPhotoStrip } from "@/lib/strip-generator";
+import { generatePhotoStrip } from "@/lib/strip-generator";
+import { exportOrShareImage } from "@/lib/media-export";
 import { toast } from "sonner";
 
 export interface PolaroidTrayProps {
@@ -26,15 +27,29 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
   const handleDownloadStrip = async () => {
     try {
       setIsGeneratingStrip(true);
-      await downloadPhotoStrip({
+      const stripDataUrl = await generatePhotoStrip({
         photos,
         settings,
         format: settings?.format || "png",
       });
+      const baseTitle =
+        (settings?.title || "photobooth").trim().toLowerCase().replace(/\s+/g, "-") || "photobooth";
+      const ext = settings?.format || "png";
+      const filename = `${baseTitle}-4strip-${Date.now().toString().slice(-4)}.${ext}`;
+      const userTitle = (settings?.title || "").trim();
+
+      const res = await exportOrShareImage({
+        dataUrl: stripDataUrl,
+        filename,
+        title: userTitle ? `${userTitle} Photo Strip` : "Photo Strip",
+      });
+
       toast.success(
-        isFullFourStrip
-          ? "4-Photo strip downloaded!"
-          : `${Math.min(photos.length, 4)}-Photo strip downloaded!`,
+        res === "shared"
+          ? "Opened share sheet"
+          : isFullFourStrip
+            ? "4-Photo strip downloaded!"
+            : `${Math.min(photos.length, 4)}-Photo strip downloaded!`,
       );
     } catch (err) {
       console.error(err);
@@ -44,21 +59,25 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
     }
   };
 
-  const handleDownload = (photo: Photo, index: number) => {
+  const handleDownload = async (photo: Photo, index: number) => {
     try {
       setDownloadingId(photo.id);
-      const a = document.createElement("a");
-      const baseTitle = (settings?.title || "photobooth").trim().toLowerCase().replace(/\s+/g, "-");
+      const baseTitle =
+        (settings?.title || "photobooth").trim().toLowerCase().replace(/\s+/g, "-") || "photobooth";
       const ext = settings?.format || "png";
       const fileData = photo.dataUrl.startsWith("data:")
         ? photo.dataUrl.replace(/^data:image\/[^;]+/, `data:image/${ext}`)
         : photo.dataUrl;
-      a.href = fileData;
-      a.download = `${baseTitle}-${Date.now().toString().slice(-4)}-${index + 1}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success("Photo downloaded");
+      const filename = `${baseTitle}-${Date.now().toString().slice(-4)}-${index + 1}.${ext}`;
+      const userTitle = (settings?.title || "").trim();
+
+      const res = await exportOrShareImage({
+        dataUrl: fileData,
+        filename,
+        ...(userTitle ? { title: userTitle } : {}),
+      });
+
+      toast.success(res === "shared" ? "Opened share sheet" : "Photo downloaded");
       setTimeout(() => setDownloadingId(null), 1000);
     } catch {
       toast.error("Failed to download photo");
@@ -138,7 +157,7 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
                 <img
                   src={photo.dataUrl}
                   alt={`Capture from ${new Date(photo.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
-                  className="h-full w-full object-cover select-none pointer-events-none"
+                  className="h-full w-full object-cover touch-manipulation"
                   loading="lazy"
                 />
 

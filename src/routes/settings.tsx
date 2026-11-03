@@ -50,10 +50,11 @@ function SettingsPage() {
       toast.error("No photos to download");
       return;
     }
+    const fallbackTitle = settings.title.trim() || "photobooth";
     photos.forEach((photo, i) => {
       const a = document.createElement("a");
       a.href = photo.dataUrl;
-      a.download = `${settings.title || "photobooth"}-${i + 1}.${settings.format}`;
+      a.download = `${fallbackTitle}-${i + 1}.${settings.format}`;
       a.click();
     });
     toast.success(`Downloaded ${photos.length} photo(s)`);
@@ -92,12 +93,12 @@ function SettingsPage() {
 
           <div className="mt-4">
             <label className="type-label mb-1.5 block" htmlFor="title">
-              Photo title
+              Photo title (optional)
             </label>
             <input
               id="title"
               className="field-input"
-              placeholder="Saturday at the booth"
+              placeholder="Optional title (e.g. Saturday Night)"
               value={settings.title}
               onChange={(e) => updateSettings({ title: e.target.value })}
             />

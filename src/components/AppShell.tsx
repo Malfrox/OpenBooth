@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Camera, Settings } from "lucide-react";
+import { Camera, Images, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 
 const tabs = [
   { to: "/", label: "Booth", icon: Camera },
+  { to: "/gallery", label: "Gallery", icon: Images },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
