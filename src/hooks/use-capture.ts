@@ -80,5 +80,31 @@ export function useCapture() {
     return () => clearInterval(timerRef.current);
   }, []);
 
-  return { capture, countdown, startTimer, cancelTimer };
+  const captureBurst = useCallback(
+    async (
+      video: HTMLVideoElement,
+      filterCss: string,
+      format: string = "png",
+      flip: boolean = false,
+      count: number = 3,
+      intervalMs: number = 250,
+      onFrame?: (dataUrl: string) => void,
+    ): Promise<string[]> => {
+      const frames: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const frame = capture(video, filterCss, format, flip);
+        if (frame) {
+          frames.push(frame);
+          onFrame?.(frame);
+        }
+        if (i < count - 1) {
+          await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+      }
+      return frames;
+    },
+    [capture],
+  );
+
+  return { capture, captureBurst, countdown, startTimer, cancelTimer };
 }

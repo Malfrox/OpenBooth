@@ -36,7 +36,7 @@ export const Route = createFileRoute("/")({
 function Booth() {
   const { selectedFilter, selectedFilterName, settings, addPhoto } = useBooth();
   const { videoRef, state: camState, start: startCamera } = useCamera(settings.facingMode);
-  const { capture, countdown, startTimer } = useCapture();
+  const { capture, captureBurst, countdown, startTimer } = useCapture();
   const { playCountdownBeep, playShutterClick } = useBoothAudio();
   const [flash, setFlash] = useState(false);
 

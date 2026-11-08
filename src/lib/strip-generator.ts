@@ -1,4 +1,5 @@
 import type { Photo, BoothSettings } from "@/lib/photobooth-context";
+import { isOffscreenCanvasSupported } from "@/lib/worker-pipeline";
 
 export interface StripGeneratorOptions {
   photos: Photo[];
@@ -55,10 +56,13 @@ export async function generatePhotoStrip({
 
   const stripHeight = paddingTop + count * photoHeight + (count - 1) * photoGap + paddingBottom;
 
-  const canvas = document.createElement("canvas");
+  const canvas =
+    isOffscreenCanvasSupported() && typeof document === "undefined"
+      ? (new OffscreenCanvas(stripWidth, stripHeight) as unknown as HTMLCanvasElement)
+      : document.createElement("canvas");
   canvas.width = stripWidth;
   canvas.height = stripHeight;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
   if (!ctx) throw new Error("Could not get canvas context");
 
   // 1. Vintage paper textured background

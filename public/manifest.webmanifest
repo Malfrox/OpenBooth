@@ -1,0 +1,16 @@
+{
+  "short_name": "OpenBooth",
+  "name": "OpenBooth Retro Photo Booth",
+  "icons": [
+    {
+      "src": "/assets/demo.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#1c1917",
+  "theme_color": "#1c1917",
+  "display": "standalone",
+  "orientation": "portrait"
+}

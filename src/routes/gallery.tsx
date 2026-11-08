@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { useBooth, type Photo } from "@/lib/photobooth-context";
 import { generatePhotoStrip } from "@/lib/strip-generator";
+import { createBurstCollage } from "@/lib/burst-generator";
 import { exportOrShareImage } from "@/lib/media-export";
 
 export const Route = createFileRoute("/gallery")({
@@ -34,6 +35,7 @@ function GalleryPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [stripModalUrl, setStripModalUrl] = useState<string | null>(null);
   const [isGeneratingStrip, setIsGeneratingStrip] = useState(false);
+  const [isGeneratingBurst, setIsGeneratingBurst] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
@@ -55,6 +57,24 @@ function GalleryPage() {
       toast.error("Failed to generate photo strip");
     } finally {
       setIsGeneratingStrip(false);
+    }
+  };
+
+  const handleCreateBurst = async () => {
+    if (photos.length === 0) {
+      toast.error("Take some photos first!");
+      return;
+    }
+    try {
+      setIsGeneratingBurst(true);
+      const burstUrl = await createBurstCollage(photos);
+      setStripModalUrl(burstUrl);
+      toast.success("Motion burst montage generated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate burst montage");
+    } finally {
+      setIsGeneratingBurst(false);
     }
   };
 
@@ -172,6 +192,16 @@ function GalleryPage() {
                       ? "Create 4-Strip"
                       : `Create ${photos.length}-Strip`}
                 </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCreateBurst}
+                disabled={isGeneratingBurst}
+                className="btn-secondary flex items-center gap-1.5"
+              >
+                <Camera size={16} />
+                <span>{isGeneratingBurst ? "Generating..." : "Burst Montage"}</span>
               </button>
 
               {isConfirmingClear ? (
