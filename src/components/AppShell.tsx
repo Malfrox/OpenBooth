@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Camera, Images, Settings } from "lucide-react";
+import { Camera, Github, Images, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 
 const tabs = [
@@ -27,6 +27,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {label}
               </Link>
             ))}
+            <a
+              href="https://github.com/Malfrox/OpenBooth"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub Repository"
+              className="btn-secondary ml-1 p-2 text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Github size={18} />
+            </a>
           </nav>
         </div>
       </header>
@@ -48,6 +57,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="type-caption">{label}</span>
           </Link>
         ))}
+        <a
+          href="https://github.com/Malfrox/OpenBooth"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub Repository"
+          className="flex h-14 flex-1 flex-col items-center justify-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Github size={20} />
+          <span className="type-caption">GitHub</span>
+        </a>
       </nav>
     </div>
   );
