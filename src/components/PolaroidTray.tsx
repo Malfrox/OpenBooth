@@ -42,6 +42,7 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
         dataUrl: stripDataUrl,
         filename,
         title: userTitle ? `${userTitle} Photo Strip` : "Photo Strip",
+        action: "download",
       });
 
       toast.success(
@@ -67,16 +68,14 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
       const baseTitle =
         (settings?.title || "photobooth").trim().toLowerCase().replace(/\s+/g, "-") || "photobooth";
       const ext = settings?.format || "png";
-      const fileData = photo.dataUrl.startsWith("data:")
-        ? photo.dataUrl.replace(/^data:image\/[^;]+/, `data:image/${ext}`)
-        : photo.dataUrl;
       const filename = `${baseTitle}-${Date.now().toString().slice(-4)}-${index + 1}.${ext}`;
       const userTitle = (settings?.title || "").trim();
 
       const res = await exportOrShareImage({
-        dataUrl: fileData,
+        dataUrl: photo.dataUrl,
         filename,
         ...(userTitle ? { title: userTitle } : {}),
+        action: "download",
       });
 
       toast.success(
@@ -155,13 +154,7 @@ export function PolaroidTray({ className = "", maxItems = 4 }: PolaroidTrayProps
               )}
 
               {/* Square photo display mimicking Polaroid emulsion window */}
-              <div
-                className="relative aspect-square w-full overflow-hidden rounded-[2px] bg-[#2A2520] shadow-inner"
-                style={{
-                  filter:
-                    photo.filterCss && photo.filterCss !== "none" ? photo.filterCss : undefined,
-                }}
-              >
+              <div className="relative aspect-square w-full overflow-hidden rounded-[2px] bg-[#2A2520] shadow-inner">
                 <img
                   src={photo.dataUrl}
                   alt={`Capture from ${new Date(photo.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}

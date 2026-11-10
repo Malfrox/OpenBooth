@@ -83,6 +83,7 @@ function GalleryPage() {
     filename: string,
     title?: string,
     onSuccess?: () => void,
+    action?: "auto" | "download" | "share",
   ) => {
     try {
       const userTitle = (title ?? settings?.title ?? "").trim();
@@ -90,6 +91,7 @@ function GalleryPage() {
         dataUrl,
         filename,
         ...(userTitle ? { title: userTitle } : {}),
+        ...(action ? { action } : {}),
       });
       if (res === "shared") {
         toast.success("Opened share sheet / Saved");
@@ -112,10 +114,16 @@ function GalleryPage() {
     const filename = `${baseTitle}-${Date.now().toString().slice(-4)}-${index + 1}.${ext}`;
     const userTitle = (settings?.title || "").trim();
 
-    await handleShareOrSave(photo.dataUrl, filename, userTitle || undefined, () => {
-      setDownloadingId(photo.id);
-      setTimeout(() => setDownloadingId(null), 1200);
-    });
+    await handleShareOrSave(
+      photo.dataUrl,
+      filename,
+      userTitle || undefined,
+      () => {
+        setDownloadingId(photo.id);
+        setTimeout(() => setDownloadingId(null), 1200);
+      },
+      "download",
+    );
   };
 
   const handleStripExport = async () => {
@@ -127,7 +135,7 @@ function GalleryPage() {
     const userTitle = (settings?.title || "").trim();
     const shareTitle = userTitle ? `${userTitle} Photo Strip` : "Photo Strip";
 
-    await handleShareOrSave(stripModalUrl, filename, shareTitle);
+    await handleShareOrSave(stripModalUrl, filename, shareTitle, undefined, "download");
   };
 
   const handleDeletePhoto = (id: string) => {
@@ -277,7 +285,6 @@ function GalleryPage() {
                   <img
                     src={photo.dataUrl}
                     alt={`OpenBooth snapshot ${index + 1}`}
-                    style={{ filter: photo.filterCss }}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-102"
                     loading="lazy"
                   />
@@ -297,12 +304,12 @@ function GalleryPage() {
                       type="button"
                       onClick={() => handleDownloadSingle(photo, index)}
                       className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
-                      title="Save or Share"
+                      title="Download photo"
                     >
                       {downloadingId === photo.id ? (
                         <Check size={14} className="text-primary" />
                       ) : (
-                        <Share2 size={14} />
+                        <Download size={14} />
                       )}
                     </button>
                     <button
@@ -352,7 +359,6 @@ function GalleryPage() {
                 <img
                   src={selectedPhoto.dataUrl}
                   alt="Full-size snapshot preview"
-                  style={{ filter: selectedPhoto.filterCss }}
                   className="max-h-[60vh] w-auto max-w-full rounded-md object-contain shadow-lg"
                 />
               </div>
@@ -361,8 +367,8 @@ function GalleryPage() {
               <div className="flex items-center gap-1.5 border-t border-border/50 bg-secondary/5 px-4 py-2 text-xs text-muted-foreground">
                 <Info size={14} className="shrink-0 text-primary" />
                 <span>
-                  Tip: On iPhone hold image to “Save to Photos”. On Android, tap “Save to Photos /
-                  Share” to send directly to Google Photos or save to your Pictures folder.
+                  Tip: On iPhone hold image to “Save to Photos”. On Android, tap Download to save
+                  directly to your device storage / Pictures folder.
                 </span>
               </div>
 
@@ -387,12 +393,14 @@ function GalleryPage() {
                         selectedPhoto.dataUrl,
                         `openbooth-${selectedPhoto.id.slice(0, 6)}.${ext}`,
                         userTitle || undefined,
+                        undefined,
+                        "download",
                       );
                     }}
                     className="btn-primary flex items-center gap-1.5"
                   >
-                    <Share2 size={16} />
-                    <span>Save to Photos / Share</span>
+                    <Download size={16} />
+                    <span>Download Photo</span>
                   </button>
                   <button
                     type="button"
@@ -445,8 +453,8 @@ function GalleryPage() {
               <div className="flex items-center gap-1.5 border-t border-border/50 bg-secondary/5 px-4 py-2 text-xs text-muted-foreground">
                 <Info size={14} className="shrink-0 text-primary" />
                 <span>
-                  Tip: On iPhone hold image to “Save to Photos”. On Android, tap “Save to Photos /
-                  Share” to send directly to Google Photos or save to your Pictures folder.
+                  Tip: On iPhone hold image to “Save to Photos”. On Android, tap Download to save
+                  directly to your device storage / Pictures folder.
                 </span>
               </div>
 
@@ -465,7 +473,7 @@ function GalleryPage() {
                   className="btn-primary flex items-center gap-1.5"
                 >
                   <Download size={16} />
-                  <span>Save to Photos / Share</span>
+                  <span>Download Strip</span>
                 </button>
               </div>
             </div>

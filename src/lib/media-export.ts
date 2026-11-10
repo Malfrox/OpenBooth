@@ -125,33 +125,58 @@ export async function saveWithFilePicker(
   }
 }
 
+export type ExportAction = "auto" | "download" | "share";
+
+/**
+ * Detects whether the client is running on an Android device.
+ */
+export function isAndroidDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android/i.test(navigator.userAgent);
+}
+
+/**
+ * Detects whether the client is running on an iOS device (iPhone, iPad, iPod).
+ */
+export function isIOSDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 export interface ExportOrShareOptions {
   dataUrl: string;
   filename: string;
   title?: string;
   text?: string;
+  action?: ExportAction;
 }
 
 /**
- * Exports or shares an image across platforms using a 3-tier strategy:
- * 1. Web Share API Level 2 (files): Best for iOS Safari ("Save Image" action) and Android Intent chooser.
- * 2. File System Access API (`showSaveFilePicker` with `startIn: 'pictures'`): Direct save into Android/Desktop Pictures folder.
- * 3. Binary Blob URL anchor download: Reliable fallback with proper MIME indexing for Android MediaScanner.
+ * Exports or shares an image across platforms:
+ * - On Android: Prioritizes direct file download (Tier 3 Blob URL anchor) unless explicit action === 'share',
+ *   avoiding the system intent chooser modal when users intend to download.
+ * - On iOS / Safari: Prioritizes Web Share API Level 2 (files) for native "Save Image" to Photos.
+ * - On Desktop / Other: Uses direct Blob download or Web Share when requested.
  *
  * Returns:
  * - 'shared': Shared via navigator.share (or user dismissed share sheet)
  * - 'saved': Saved directly via showSaveFilePicker
  * - 'downloaded': Downloaded via Blob URL anchor fallback
  */
-export async function exportOrShareImage(options: {
-  dataUrl: string;
-  filename: string;
-  title?: string;
-  text?: string;
-}): Promise<"shared" | "saved" | "downloaded"> {
-  const { dataUrl, filename, title, text } = options;
+export async function exportOrShareImage(
+  options: ExportOrShareOptions,
+): Promise<"shared" | "saved" | "downloaded"> {
+  const { dataUrl, filename, title, text, action = "auto" } = options;
 
-  if (canNativeShareFiles()) {
+  // If explicit action is "download" or if on Android (without explicit action="share"),
+  // directly trigger file download instead of opening the system share sheet.
+  const preferDirectDownload =
+    action === "download" || (action !== "share" && isAndroidDevice());
+
+  if (!preferDirectDownload && canNativeShareFiles()) {
     try {
       const file = await dataUrlToFile(dataUrl, filename);
       if (navigator.canShare({ files: [file] })) {
@@ -180,8 +205,10 @@ export async function exportOrShareImage(options: {
     }
   }
 
-  // Tier 2: File System Access API (Chromium Android Chrome 132+ and desktop)
-  if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
+  // Tier 2: File System Access API (when available and not explicitly falling back to anchor)
+  // Note: On Android browsers, showSaveFilePicker can also trigger file save dialogs;
+  // direct blob URL download is standard for instant browser download.
+  if (action === "share" && typeof window !== "undefined" && "showSaveFilePicker" in window) {
     try {
       const blob = await dataUrlToBlob(dataUrl);
       const mime =
@@ -191,7 +218,6 @@ export async function exportOrShareImage(options: {
       if (result === "saved") {
         return "saved";
       }
-      // If user dismissed the picker, treat as successfully handled without downloading twice
       if (result === "dismissed") {
         return "saved";
       }
@@ -200,7 +226,7 @@ export async function exportOrShareImage(options: {
     }
   }
 
-  // Tier 3: Binary Blob URL anchor download fallback
+  // Tier 3: Direct Binary Blob URL anchor download
   await downloadBlobUrl(dataUrl, filename);
   return "downloaded";
 }
